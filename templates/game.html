@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<h1> <a href='/rankings'>Rankings</a></h1>
+
+<h1> <a href='/games'>Game Log</a></h1>
+
+<div class=left>
+  <h3>Who Won?</h3>
+  <select name=winner form=add_game>
+  {% for entry in entries %}
+    <option>{{ entry.first_name + ' ' + entry.last_name }}</option>
+  {% else %}
+  {% endfor %}
+  </select>
+</div>
+
+<div class=right>
+  <h3>Who Lost?</h3>
+  <select name=loser form=add_game>
+  {% for entry in entries %}
+    <option>{{ entry.first_name + ' ' + entry.last_name }}</option>
+  {% else %}
+  {% endfor %}
+  </select>
+</div>
+
+<div class=clear>
+  <h3>What was the score?</h3>
+  <div class=left>
+    <input type=text name=score1 form=add_game value="(number)">
+  </div>
+  <div class=right>
+    <input type=text name=score2 form=add_game value="(number)">
+  </div>
+  <p>Don't see yourself? <a href='/add_user'>Add a player</a></p>
+
+  <form action="{{ url_for('add_game') }}" method=post id=add_game>
+    <input type=submit name=submit value="Add Game">
+  </form>
+</div>
+
+{% endblock %}
+

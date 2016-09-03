@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block body %}
+  <ul class=entries>
+  {% for entry in entries %}
+    <li><em>{{ entry.first_name + ' ' + entry.last_name}}</em>: {{entry.score}}  ({{entry.won}} - {{entry.lost}})
+  {% else %}
+    <li><em>No users yet</em>
+  {% endfor %}
+  </ul>
+{% endblock %}

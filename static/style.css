@@ -1,0 +1,25 @@
+body {
+  font-family: sans-serif; background: #eee;
+  padding-left: 20%;
+  padding-right: 20%;
+}
+
+select, input {
+  width: 90%;
+  padding-right: 5%
+  padding-left: 5%
+}
+
+.left {
+  float: left;
+  width: 50%
+}
+
+.right {
+  float: right;
+  width: 50%;
+}
+
+.clear {
+  clear: both;
+}
