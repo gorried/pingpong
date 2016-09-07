@@ -85,7 +85,7 @@ def add_user():
 
 @app.route('/add_game', methods=['POST'])
 def add_game():
-    K_VALUE = 32
+
     STD_DEV = 400
     SCORE_FLOOR = 100
 
@@ -95,8 +95,11 @@ def add_game():
     loser = request.form['loser'].split(' ')
 
     # get the id's from the winner and loser
-    winner_id, winner_elo = db.execute('select id, elo from users where first_name = ? and last_name = ?', (winner[0], winner[1])).fetchone()
-    loser_id, loser_elo = db.execute('select id, elo from users where first_name = ? and last_name = ?', (loser[0], loser[1])).fetchone()
+    winner_id, winner_elo, winner_won, winner_lost = db.execute('select id, elo, won, lost from users where first_name = ? and last_name = ?', (winner[0], winner[1])).fetchone()
+    loser_id, loser_elo, loser_won, loser_lost = db.execute('select id, elo, won, lost from users where first_name = ? and last_name = ?', (loser[0], loser[1])).fetchone()
+
+    winner_games = winner_lost + winner_won
+    loser_games = loser_lost + loser_won
 
     # sanity check: if scores or id's are the same, fail silently
     if winner_id != loser_id:
@@ -104,8 +107,8 @@ def add_game():
         e_winner = 1.0 / (1 + 10.0 ** (float(loser_elo - winner_elo) / STD_DEV))
         e_loser = 1.0 / (1 + 10.0 ** (float(winner_elo - loser_elo) / STD_DEV))
 
-        new_winner_elo = int(max(winner_elo + K_VALUE * (1 - e_winner), SCORE_FLOOR))
-        new_loser_elo = int(max(loser_elo - K_VALUE * e_loser, SCORE_FLOOR))
+        new_winner_elo = int(max(winner_elo + get_k(winner_elo, winner_games) * (1 - e_winner), SCORE_FLOOR))
+        new_loser_elo = int(max(loser_elo - get_k(loser_elo, loser_games) * e_loser, SCORE_FLOOR))
 
         # update winner
         db.execute('update users set won = won + 1, elo = ?, updated_at = ? where id = ?', (new_winner_elo, str(datetime.now()), winner_id))
@@ -116,6 +119,18 @@ def add_game():
         db.commit()
 
     return redirect(url_for('game'))
+
+def get_k(elo, games):
+    K_VALUE = 32
+    K_BEGINNER = 60
+    K_MASTER = 10
+
+    if games < 10:
+        return K_BEGINNER
+    elif elo > 2000:
+        return K_MASTER
+    else:
+        return K_VALUE
 
 """
 Implements a decay function in three phases
@@ -226,7 +241,7 @@ class SlackInterface:
             self.position_swap(old_rankings, new_rankings)
             )
 
-    def leader_changed(self, old_rankings, new_rankings)
+    def leader_changed(self, old_rankings, new_rankings):
         old_id, old_first, old_last, old_elo = old_rankings[0]
         new_id, new_first, new_last, new_elo = new_rankings[0]
         if old_id != new_id:
