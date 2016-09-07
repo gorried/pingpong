@@ -23,3 +23,20 @@ select, input {
 .clear {
   clear: both;
 }
+
+#champ {
+  font-size: 40pt;
+  animation: blinker 1s linear infinite;
+  animation: color_change 4s linear infinite;
+}
+
+@keyframes color_change {
+  0% { color: red; }
+  25% { color: cyan; }
+  50% { color: orange; }
+  75% { color: magenta; }
+}
+
+@keyframes blinker {
+  50% { opacity: 0.0; }
+}

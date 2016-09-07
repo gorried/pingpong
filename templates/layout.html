@@ -4,19 +4,8 @@
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
   <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+  <script type="text/javascript" src="{{ url_for('static', filename='utterance.js') }}"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-  <script type="text/javascript">
-    function filterList() {
-      var u1 = document.getElementById("userGameSelect1").value;
-      var u2 = document.getElementById("userGameSelect2").value;
-
-      var entries = document.getElementsByClassName("gameEntry");
-      entries.forEach((currVal, idx, arr) => {
-        // some filtering garbage here
-        console.log(currVal);
-      });
-    }
-  </script>
 </head>
 <body>
   <div class=page>

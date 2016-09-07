@@ -3,34 +3,43 @@
 
 <div style="height:30px;"></div>
 
-<!-- Button trigger modal -->
-<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addGameModal">
-  Add Game
-</button>
+<div class=row>
+  <div class=col-lg-9>
+    <div id=champ>
+      {% if rankings|length > 0 %}
+        {{rankings[0].first_name + ' ' + rankings[0].last_name}} is the champion
+      {% endif %}
+    </div>
 
-<button type="button" style="float:right;" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addUserModal">
-  Add User
-</button>
-
-<h1>PSL Ping Pong Rankings</h1>
-
-<table class="table">
-  <tr>
-    <th>Rank</th>
-    <th>Player</th>
-    <th>Score</th>
-    <th>Record</th>
-  </tr>
-  {% for user in rankings %}
-    <tr>
-      <td>{{ loop.index }}</td>
-      <td><b>{{ user.first_name + ' ' + user.last_name }}</b></td>
-      <td>{{ user.elo }}</td>
-      <td>{{ user.won }} - {{ user.lost }}</td>
-    </tr>
-  {% else %}
-  {% endfor %}
-</table>
+    <table class="table">
+      <tr>
+        <th>Rank</th>
+        <th>Player</th>
+        <th>Score</th>
+        <th>Record</th>
+      </tr>
+      {% for user in rankings %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><b>{{ user.first_name + ' ' + user.last_name }}</b></td>
+          <td>{{ user.elo }}</td>
+          <td>{{ user.won }} - {{ user.lost }}</td>
+        </tr>
+      {% else %}
+      {% endfor %}
+    </table>
+  </div>
+  <div class=col-lg-3>
+    <h1>PSL Ping Pong Rankings</h1>
+    <button type="button" style="width:100%;" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addGameModal">
+      Add Game
+    </button>
+    <div style="height:10px;"></div>
+    <button type="button" style="width:100%" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addUserModal">
+      Add User
+    </button>
+  </div>
+</div>
 
 
 <!-- Modal -->
