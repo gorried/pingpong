@@ -11,6 +11,9 @@ from apscheduler.triggers.interval import IntervalTrigger
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
 
+#mortality
+mortals = ['ben']
+
 # the number of days of inactivity after which we begin to decay
 DECAY_AFTER = 3
 
@@ -107,8 +110,11 @@ def add_game():
         new_winner_elo = int(max(winner_elo + K_VALUE * (1 - e_winner), SCORE_FLOOR))
         new_loser_elo = int(max(loser_elo - K_VALUE * e_loser, SCORE_FLOOR))
 
-        # update winner
-        db.execute('update users set won = won + 1, elo = ?, updated_at = ? where id = ?', (new_winner_elo, str(datetime.now()), winner_id))
+        winner_is_mortal = len([winner[0] for x in mortals if winner[0].lower() in x.lower()]) > 0
+
+        if not winner_is_mortal:
+            # update winner
+            db.execute('update users set won = won + 1, elo = ?, updated_at = ? where id = ?', (new_winner_elo, str(datetime.now()), winner_id))
 
         # update loser
         db.execute('update users set lost = lost + 1, elo = ?, updated_at = ? where id = ?', (new_loser_elo, str(datetime.now()), loser_id))
