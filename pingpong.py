@@ -193,3 +193,100 @@ scheduler.add_job(
     replace_existing=True)
 # Shut down the scheduler when exiting the app
 atexit.register(lambda: scheduler.shutdown())
+
+'''
+Skeleton code for slack events
+'''
+
+def stdev(arr):
+    if len(arr) < 2:
+        raise ValueError("To calculate stdev, length ")
+    mean = float(sum(arr)) / len(arr)
+    deltas = [abs(a - mean)**2 for a in arr]
+    return math.sqrt(float(sum(deltas)) / len(deltas))
+
+class SlackInterface:
+    def __init__(self):
+        pass
+
+    def send_to_slack(self, title, message):
+        # TODO: Alex does this
+        pass
+
+    '''
+    winner - (id, first, last, elo)
+    loser - (id, first, last, elo)
+    old_rankings - [(id, first, last, elo) ...]
+    new_rankings - [(id, first, last, elo) ...]
+    '''
+    def test(self, winner, loser, old_rankings, new_rankings):
+        return (
+            self.leader_changed(old_rankings, new_rankings) or
+            self.upset(winner, loser) or
+            self.position_swap(old_rankings, new_rankings)
+            )
+
+    def leader_changed(self, old_rankings, new_rankings)
+        old_id, old_first, old_last, old_elo = old_rankings[0]
+        new_id, new_first, new_last, new_elo = new_rankings[0]
+        if old_id != new_id:
+            self.send_to_slack(
+                'New Leader!',
+                '{} has overtaken {} as the leader of PSL ping pong!'.format(
+                    '{} {}'.format(old_first, old_last),
+                    '{} {}'.format(new_first, new_last)
+                    )
+                )
+            return True
+        return False
+
+    def upset(self, winner, loser):
+        elos = [r[3] for r in rankings]
+        sd = stdev(elos)
+
+        winner_id, winner_first, winner_last, winner_elo = winner
+        loser_id, loser_first, loser_last, loser_elo = loser
+
+        if loser_elo - winner_elo > 1.5 * sd:
+            self.send_to_slack(
+                'Upset Alert!',
+                '{}, ({}) has upset {} ({}). How embarrassing for {}!'.format(
+                    '{} {}'.format(winner_first, winner_last),
+                    winner_elo,
+                    '{} {}'.format(loser_first, loser_last),
+                    loser_elo,
+                    '{} {}'.format(loser_first, loser_last)
+                    )
+                )
+            return True
+        return False
+
+    def position_swap(self, old_rankings, new_rankings):
+        if len(old_rankings) != len(new_rankings):
+            raise ValueError("Rankings of different length")
+
+        for i in xrange(len(old_rankings)):
+            old_id, old_first, old_last, old_elo = old_rankings[i]
+            new_id, new_first, new_last, new_elo = new_rankings[i]
+
+            if old_id != new_id:
+                place = i + 1
+
+                suffix = 'th'
+                if place == 1:
+                    suffix = 'st'
+                elif place == 2:
+                    suffix = 'nd'
+                elif place == 3:
+                    suffix = 'rd'
+
+                self.send_to_slack(
+                    'Shakeup in the Rankings!',
+                    '{} has replaced {} to take {} place!'.format(
+                        '{} {}'.format(old_first, old_last),
+                        '{} {}'.format(new_first, new_last),
+                        '{}{}'.format(place, suffix)
+                        )
+                    )
+                return True
+        return False

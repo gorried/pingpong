@@ -1,5 +1,5 @@
 drop table if exists users;
-drop table if exists games;
+
 create table users (
   id integer primary key autoincrement,
   first_name text not null,
