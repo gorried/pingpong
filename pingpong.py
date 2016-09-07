@@ -190,7 +190,7 @@ scheduler = BackgroundScheduler()
 scheduler.start()
 scheduler.add_job(
     func=decay_elo,
-    trigger=IntervalTrigger(seconds=5),
+    trigger=IntervalTrigger(hours=24),
     id='elo_decay',
     name='Decay Elo every day',
     replace_existing=True)
