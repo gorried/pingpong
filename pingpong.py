@@ -1,7 +1,18 @@
+import atexit
+import math
 import os
 import sqlite3
+import time
+
+from dateutil import parser as date_parser
+from datetime import datetime
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
+
+# the number of days of inactivity after which we begin to decay
+DECAY_AFTER = 7
 
 # create our little application :)
 app = Flask(__name__)
@@ -62,8 +73,8 @@ def game():
 def add_user():
     db = get_db()
     db.execute(
-        'insert into users (first_name, last_name) values (?, ?)',
-        [request.form['fn'], request.form['ln']])
+        'insert into users (first_name, last_name, updated_at) values (?, ?, ?)',
+        [request.form['fn'], request.form['ln'], str(datetime.now())])
     db.commit()
     flash('New entry was successfully posted')
 
@@ -94,11 +105,88 @@ def add_game():
         new_loser_elo = max(loser_elo - K_VALUE * e_loser, SCORE_FLOOR)
 
         # update winner
-        db.execute('update users set won = won + 1, elo = ? where id = ?', (new_winner_elo, winner_id))
+        db.execute('update users set won = won + 1, elo = ?, updated_at = ? where id = ?', (new_winner_elo, str(datetime.now()), winner_id))
 
         # update loser
-        db.execute('update users set lost = lost + 1, elo = ? where id = ?', (new_loser_elo, loser_id))
+        db.execute('update users set lost = lost + 1, elo = ?, updated_at = ? where id = ?', (new_loser_elo, str(datetime.now()), loser_id))
 
         db.commit()
 
     return redirect(url_for('game'))
+
+"""
+Implements a decay function in three phases
+
+returns positive number representing the decay
+
+phase 0 - don't decay for a week
+phase 1 - polynomial decay to -200 over the course of two weeks
+phase 2 - negative logarithmic decay to -300 over the course of two weeks
+phase 3 - linear decay over two weeks to -600
+"""
+def decay_fn(day):
+    # cannot decay more than this
+    P1_MAX_DECAY = 200
+    P2_MAX_DECAY = 100
+    P3_MAX_DECAY = 300
+
+    DURATION = 14
+
+    P1_END = DURATION
+    P2_END = P1_END + DURATION
+
+    norm_day = day - DECAY_AFTER
+
+    if day < P1_END:
+        return P1_MAX_DECAY * poly_fn(DURATION, day)
+    elif day < P2_END:
+        return sum([P1_MAX_DECAY, P2_MAX_DECAY * log_fn(DURATION, day - P1_END)])
+    else:
+        max_decay = sum([P1_MAX_DECAY, P2_MAX_DECAY, P3_MAX_DECAY])
+        curr_decay = sum([P1_MAX_DECAY, P2_MAX_DECAY, P3_MAX_DECAY * linear_fn(DURATION, day - P2_END)])
+        return min(max_decay, curr_decay)
+
+"""
+Decay functions for the different phases.
+
+Return a number in [0,1]
+"""
+
+# polynomial
+def poly_fn(duration, day):
+    return float(day ** 2) / float(duration ** 2)
+
+# log
+def log_fn(duration, day):
+    return math.log(day + 1) / math.log(duration + 1)
+
+# linear
+def linear_fn(duration, day):
+    return (1.0 / duration) * day
+
+def decay_for(day):
+    return -abs(decay_fn(day-1) - decay_fn(day))
+
+def decay_elo():
+    with app.app_context():
+        db = get_db()
+        cur = db.execute('select id, elo, updated_at from users')
+        entries = cur.fetchall()
+        for entry in entries:
+            days = (datetime.now() - date_parser.parse(entry[2])).days
+            if days > DECAY_AFTER:
+                db.execute('update users set elo = ? where id = ?', (int(entry[1]) + decay_fn(days), entry[0]))
+
+        db.commit()
+
+# schedule our decay function
+scheduler = BackgroundScheduler()
+scheduler.start()
+scheduler.add_job(
+    func=decay_elo,
+    trigger=IntervalTrigger(seconds=5),
+    id='elo_decay',
+    name='Decay Elo every day',
+    replace_existing=True)
+# Shut down the scheduler when exiting the app
+atexit.register(lambda: scheduler.shutdown())
