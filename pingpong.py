@@ -12,7 +12,7 @@ from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
 
 # the number of days of inactivity after which we begin to decay
-DECAY_AFTER = 7
+DECAY_AFTER = 3
 
 # create our little application :)
 app = Flask(__name__)
@@ -74,15 +74,12 @@ def add_user():
     db = get_db()
     # check for dupes
     cur = db.execute('select id from users where first_name=? and last_name=?', (request.form['fn'], request.form['ln']))
-    if len(cur.fetchall()) > 0:
-        # dupe
-        return
-
-    db.execute(
-        'insert into users (first_name, last_name, updated_at) values (?, ?, ?)',
-        [request.form['fn'], request.form['ln'], str(datetime.now())])
-    db.commit()
-    flash('New entry was successfully posted')
+    if len(cur.fetchall()) == 0:
+        db.execute(
+            'insert into users (first_name, last_name, updated_at) values (?, ?, ?)',
+            [request.form['fn'], request.form['ln'], str(datetime.now())])
+        db.commit()
+        flash('New entry was successfully posted')
 
     return redirect(url_for('game'))
 
