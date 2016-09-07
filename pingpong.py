@@ -48,43 +48,25 @@ def close_db(error):
     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
 
-@app.route('/games')
-def games():
-    db = get_db()
-    # get the games joining with users and fetching the names
-    cur = db.execute('select * from games')
-    entries = cur.fetchall()
-    cur = db.execute('select id, first_name, last_name from users')
-    users = cur.fetchall()
-    return render_template('games.html', entries=(entries, users))
-
-@app.route('/rankings')
-def rankings():
-    db = get_db()
-    cur = db.execute('select first_name, last_name, score, won, lost from users order by score desc')
-    entries = cur.fetchall()
-    return render_template('rankings.html', entries=entries)
 
 @app.route('/')
 def game():
     db = get_db()
     cur = db.execute('select first_name, last_name from users order by first_name')
-    entries = cur.fetchall()
-    return render_template('game.html', entries=entries)
+    users = cur.fetchall()
+    cur = db.execute('select first_name, last_name, elo, won, lost from users order by elo desc')
+    rankings = cur.fetchall()
+    return render_template('game.html', users=users, rankings=rankings)
 
-@app.route('/add_user')
+@app.route('/add_user', methods=['POST'])
 def add_user():
-    db = get_db()
-    return render_template('add_user.html')
-
-@app.route('/add_user_method', methods=['POST'])
-def add_user_method():
     db = get_db()
     db.execute(
         'insert into users (first_name, last_name) values (?, ?)',
         [request.form['fn'], request.form['ln']])
     db.commit()
     flash('New entry was successfully posted')
+
     return redirect(url_for('game'))
 
 @app.route('/add_game', methods=['POST'])
@@ -99,34 +81,23 @@ def add_game():
     loser = request.form['loser'].split(' ')
 
     # get the id's from the winner and loser
-    winner_id, winner_score = db.execute('select id, score from users where first_name = ? and last_name = ?', (winner[0], winner[1])).fetchone()
-    loser_id, loser_score = db.execute('select id, score from users where first_name = ? and last_name = ?', (loser[0], loser[1])).fetchone()
-
-    s1 = request.form['score1']
-    s2 = request.form['score2']
+    winner_id, winner_elo = db.execute('select id, elo from users where first_name = ? and last_name = ?', (winner[0], winner[1])).fetchone()
+    loser_id, loser_elo = db.execute('select id, elo from users where first_name = ? and last_name = ?', (loser[0], loser[1])).fetchone()
 
     # sanity check: if scores or id's are the same, fail silently
-    if winner_id != loser_id and s1 != s2 and s1.isdigit() and s2.isdigit():
-        if s1 < s2:
-            s1, s2 = (s2, s1)
-
+    if winner_id != loser_id:
         # adjust the scores of the players
-        e_winner = 1.0 / (1 + 10.0 ** (float(loser_score - winner_score) / STD_DEV))
-        e_loser = 1.0 / (1 + 10.0 ** (float(winner_score - loser_score) / STD_DEV))
+        e_winner = 1.0 / (1 + 10.0 ** (float(loser_elo - winner_elo) / STD_DEV))
+        e_loser = 1.0 / (1 + 10.0 ** (float(winner_elo - loser_elo) / STD_DEV))
 
-        new_winner_score = max(winner_score + K_VALUE * (1 - e_winner), SCORE_FLOOR)
-        new_loser_score = max(loser_score - K_VALUE * e_loser, SCORE_FLOOR)
+        new_winner_elo = max(winner_elo + K_VALUE * (1 - e_winner), SCORE_FLOOR)
+        new_loser_elo = max(loser_elo - K_VALUE * e_loser, SCORE_FLOOR)
 
         # update winner
-        db.execute('update users set won = won + 1, score = ? where users.first_name = ? and users.last_name = ?', (new_winner_score, winner[0], winner[1]))
+        db.execute('update users set won = won + 1, elo = ? where id = ?', (new_winner_elo, winner_id))
 
         # update loser
-        db.execute('update users set lost = lost + 1, score = ? where users.first_name = ? and users.last_name=?', (new_loser_score, loser[0], loser[1]))
-
-        # log the game
-        db.execute(
-            'insert into games (winner_id, winner_name, loser_id, loser_name, winner_score, loser_score) values (?, ?, ?, ?, ?, ?)',
-            (winner_id, request.form['winner'], loser_id, request.form['loser'], s1, s2))
+        db.execute('update users set lost = lost + 1, elo = ? where id = ?', (new_loser_elo, loser_id))
 
         db.commit()
 

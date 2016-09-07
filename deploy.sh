@@ -3,5 +3,7 @@ pip install flask
 export FLASK_APP=pingpong.py
 export FLASK_DEBUG=0
 
-flask initdb
+# If this is your first time running, uncomment the next line
+# flask initdb
+
 flask run

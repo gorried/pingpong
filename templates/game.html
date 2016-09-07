@@ -1,44 +1,107 @@
 {% extends "layout.html" %}
 {% block body %}
 
-<h1> <a href='/rankings'>Rankings</a></h1>
+<div style="height:30px;"></div>
 
-<h1> <a href='/games'>Game Log</a></h1>
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addGameModal">
+  Add Game
+</button>
 
-<div class=left>
-  <h3>Who Won?</h3>
-  <select name=winner form=add_game>
-  {% for entry in entries %}
-    <option>{{ entry.first_name + ' ' + entry.last_name }}</option>
+<button type="button" style="float:right;" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addUserModal">
+  Add User
+</button>
+
+<h1>PSL Ping Pong Rankings</h1>
+
+<table class="table">
+  <tr>
+    <th>Rank</th>
+    <th>Player</th>
+    <th>Score</th>
+    <th>Record</th>
+  </tr>
+  {% for user in rankings %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ user.first_name + ' ' + user.last_name }}</td>
+      <td>{{ user.elo }}</td>
+      <td>{{ user.won }} - {{ user.lost }}</td>
+    </tr>
   {% else %}
   {% endfor %}
-  </select>
-</div>
+</table>
 
-<div class=right>
-  <h3>Who Lost?</h3>
-  <select name=loser form=add_game>
-  {% for entry in entries %}
-    <option>{{ entry.first_name + ' ' + entry.last_name }}</option>
-  {% else %}
-  {% endfor %}
-  </select>
-</div>
 
-<div class=clear>
-  <h3>What was the score?</h3>
-  <div class=left>
-    <input type=text name=score1 form=add_game value="(number)">
+<!-- Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Add a User</h4>
+      </div>
+      <div class="modal-body">
+        <form action="{{ url_for('add_user') }}" method=post class=form-inline>
+          <div class="input-group">
+            <input name=fn type="text" class="form-control" placeholder="First Name" aria-describedby="basic-addon1">
+          </div>
+          <div class="form-group">
+            <input name=ln type="text" class="form-control" placeholder="Last Name" aria-describedby="basic-addon1">
+          </div>
+          <button type="submit" class="btn btn-default">Add</button>
+        </form>
+      </div>
+    </div>
   </div>
-  <div class=right>
-    <input type=text name=score2 form=add_game value="(number)">
-  </div>
-  <p>Don't see yourself? <a href='/add_user'>Add a player</a></p>
-
-  <form action="{{ url_for('add_game') }}" method=post id=add_game>
-    <input type=submit name=submit value="Add Game">
-  </form>
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="addGameModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Add a Game</h4>
+      </div>
+      <div class="modal-body">
+
+        <form action="{{ url_for('add_game')}}" method="post" class=form-horizontal>
+          <div class="form-group">
+            <label for="winner" class="col-sm-2 control-label">Winner</label>
+            <div class="col-sm-10">
+              <select name=winner class=form-control>
+                {% for user in users %}
+                  <option>{{ user.first_name + ' ' + user.last_name }}</option>
+                {% else %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="loser" class="col-sm-2 control-label">Loser</label>
+            <div class="col-sm-10">
+              <select name=loser class=form-control>
+                {% for user in users %}
+                  <option>{{ user.first_name + ' ' + user.last_name }}</option>
+                {% else %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+              <button type="submit" class="btn btn-default">Add</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 {% endblock %}
 
