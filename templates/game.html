@@ -24,7 +24,7 @@
   {% for user in rankings %}
     <tr>
       <td>{{ loop.index }}</td>
-      <td>{{ user.first_name + ' ' + user.last_name }}</td>
+      <td><b>{{ user.first_name + ' ' + user.last_name }}</b></td>
       <td>{{ user.elo }}</td>
       <td>{{ user.won }} - {{ user.lost }}</td>
     </tr>

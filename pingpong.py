@@ -65,13 +65,19 @@ def game():
     db = get_db()
     cur = db.execute('select first_name, last_name from users order by first_name')
     users = cur.fetchall()
-    cur = db.execute('select first_name, last_name, elo, won, lost from users order by elo desc')
+    cur = db.execute('select first_name, last_name, elo, won, lost from users order by elo desc, first_name')
     rankings = cur.fetchall()
     return render_template('game.html', users=users, rankings=rankings)
 
 @app.route('/add_user', methods=['POST'])
 def add_user():
     db = get_db()
+    # check for dupes
+    cur = db.execute('select id from users where first_name=? and last_name=?', (request.form['fn'], request.form['ln']))
+    if len(cur.fetchall()) > 0:
+        # dupe
+        return
+
     db.execute(
         'insert into users (first_name, last_name, updated_at) values (?, ?, ?)',
         [request.form['fn'], request.form['ln'], str(datetime.now())])
@@ -101,8 +107,8 @@ def add_game():
         e_winner = 1.0 / (1 + 10.0 ** (float(loser_elo - winner_elo) / STD_DEV))
         e_loser = 1.0 / (1 + 10.0 ** (float(winner_elo - loser_elo) / STD_DEV))
 
-        new_winner_elo = max(winner_elo + K_VALUE * (1 - e_winner), SCORE_FLOOR)
-        new_loser_elo = max(loser_elo - K_VALUE * e_loser, SCORE_FLOOR)
+        new_winner_elo = int(max(winner_elo + K_VALUE * (1 - e_winner), SCORE_FLOOR))
+        new_loser_elo = int(max(loser_elo - K_VALUE * e_loser, SCORE_FLOOR))
 
         # update winner
         db.execute('update users set won = won + 1, elo = ?, updated_at = ? where id = ?', (new_winner_elo, str(datetime.now()), winner_id))
@@ -175,7 +181,7 @@ def decay_elo():
         for entry in entries:
             days = (datetime.now() - date_parser.parse(entry[2])).days
             if days > DECAY_AFTER:
-                db.execute('update users set elo = ? where id = ?', (int(entry[1]) + decay_fn(days), entry[0]))
+                db.execute('update users set elo = ? where id = ?', (int(entry[1]) + int(decay_fn(days)), entry[0]))
 
         db.commit()
 
