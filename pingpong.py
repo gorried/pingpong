@@ -92,7 +92,9 @@ def add_game():
     STD_DEV = 400
     SCORE_FLOOR = 100
 
-    # code for updating elo score goes here
+    # define the slack interface
+    si = SlackInterface()
+
     db = get_db()
     winner = request.form['winner'].split(' ')
     loser = request.form['loser'].split(' ')
@@ -112,13 +114,27 @@ def add_game():
 
         new_winner_elo = int(max(winner_elo + get_k(winner_elo, winner_games) * (1 - e_winner), SCORE_FLOOR))
         new_loser_elo = int(max(loser_elo - get_k(loser_elo, loser_games) * e_loser, SCORE_FLOOR))
-        si = SlackInterface()
-        si.send_to_slack("a","b")#TODO call in proper place
+
+        # get old rankings
+        cur = db.execute('select id, first_name, last_name, elo from users order by elo desc, first_name')
+        old_rankings = cur.fetchall()
+
         # update winner
         db.execute('update users set won = won + 1, elo = ?, updated_at = ? where id = ?', (new_winner_elo, str(datetime.now()), winner_id))
 
         # update loser
         db.execute('update users set lost = lost + 1, elo = ?, updated_at = ? where id = ?', (new_loser_elo, str(datetime.now()), loser_id))
+
+        # get new rankings
+        cur = db.execute('select id, first_name, last_name, elo from users order by elo desc, first_name')
+        new_rankings = cur.fetchall()
+
+        si.test(
+            (winner_id, winner[0], winner[1], winner_elo),
+            (loser_id, loser[0], loser[1], loser_elo),
+            old_rankings,
+            new_rankings
+            )
 
         db.commit()
 
@@ -265,7 +281,7 @@ class SlackInterface:
         winner_id, winner_first, winner_last, winner_elo = winner
         loser_id, loser_first, loser_last, loser_elo = loser
 
-        if loser_elo - winner_elo > 1.5 * sd:
+        if len(rankings) > 8 and loser_elo - winner_elo > 1.5 * sd:
             self.send_to_slack(
                 'Upset Alert!',
                 '{}, ({}) has upset {} ({}). How embarrassing for {}!'.format(
