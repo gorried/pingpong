@@ -11,6 +11,9 @@ from apscheduler.triggers.interval import IntervalTrigger
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
 
+from pyslack import SlackClient
+slack_client = SlackClient(os.environ['SLACK_API_TOKEN'])
+
 # the number of days of inactivity after which we begin to decay
 DECAY_AFTER = 3
 
@@ -109,7 +112,8 @@ def add_game():
 
         new_winner_elo = int(max(winner_elo + get_k(winner_elo, winner_games) * (1 - e_winner), SCORE_FLOOR))
         new_loser_elo = int(max(loser_elo - get_k(loser_elo, loser_games) * e_loser, SCORE_FLOOR))
-
+        si = SlackInterface()
+        si.send_to_slack("a","b")#TODO call in proper place
         # update winner
         db.execute('update users set won = won + 1, elo = ?, updated_at = ? where id = ?', (new_winner_elo, str(datetime.now()), winner_id))
 
@@ -225,8 +229,7 @@ class SlackInterface:
         pass
 
     def send_to_slack(self, title, message):
-        # TODO: Alex does this
-        pass
+        slack_client.chat_post_message('#pong', title+'\n'+message, username='pongbot')
 
     '''
     winner - (id, first, last, elo)
