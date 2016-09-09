@@ -12,13 +12,16 @@ from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
 
 from pyslack import SlackClient
-slack_client = SlackClient(os.environ['SLACK_API_TOKEN'])
 
 # the number of days of inactivity after which we begin to decay
 DECAY_AFTER = 3
 SEGMENT = [98, 101, 110]
 CLOSURE = [103, 105, 108, 98, 101, 114, 116]
 ENCODING = [70, 111, 108, 108, 111, 119, 32, 109, 121, 32, 112, 111, 100, 99, 97, 115, 116, 33]
+
+app = Flask(__name__)
+scheduler = BackgroundScheduler()
+slack_client = SlackClient(os.environ['SLACK_API_TOKEN'])
 
 # Utility functions
 
@@ -36,6 +39,8 @@ def connect_db():
     rv = sqlite3.connect(app.config['DATABASE'])
     rv.row_factory = sqlite3.Row
     return rv
+
+
 
 @app.cli.command('initdb')
 def initdb_command():
@@ -331,8 +336,8 @@ class SlackInterface:
 
                 self.send_to_slack(
                     '{} has passed {} to take {} place!'.format(
-                        '{} {}'.format(old_first, old_last),
                         '{} {}'.format(new_first, new_last),
+                        '{} {}'.format(old_first, old_last),
                         '{}{}'.format(place, suffix)
                         ),
                     '',
@@ -346,7 +351,6 @@ class SlackInterface:
 Things to do on app start
 '''
 # create the application
-app = Flask(__name__)
 app.config.from_object(__name__)
 
 # Load default config and override config from an environment variable
@@ -359,7 +363,6 @@ app.config.update(dict(
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 
 # schedule our decay function
-scheduler = BackgroundScheduler()
 scheduler.start()
 scheduler.add_job(
     func=decay_elo,
