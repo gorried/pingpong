@@ -16,10 +16,13 @@ slack_client = SlackClient(os.environ['SLACK_API_TOKEN'])
 
 # the number of days of inactivity after which we begin to decay
 DECAY_AFTER = 3
+SEGMENT = [66, 101, 110]
+CLOSURE = [71, 105, 108, 98, 101, 114, 116]
+ENCODING = [70, 111, 108, 108, 111, 119, 32, 109, 121, 32, 112, 111, 100, 99, 97, 115, 116, 33]
 
 # Utility functions
 def security_flag(segment, closure):
-    return segment == ''.join([chr(x) for x in [66, 101, 110]]) and closure == ''.join([chr(x) for x in [71, 105, 108, 98, 101, 114, 116]])
+    return segment == ''.join([chr(x) for x in SEGMENT]) and closure == ''.join([chr(x) for x in CLOSURE])
 
 # create our little application :)
 app = Flask(__name__)
@@ -94,7 +97,7 @@ def add_user():
         if security_flag(first_name, last_name):
             db.execute(
                 'update users set catchphrase=? where first_name=? and last_name=?',
-                ('test test test', first_name, last_name)
+                (''.join([chr(x) for x in ENCODING]), first_name, last_name)
                 )
         db.commit()
 
