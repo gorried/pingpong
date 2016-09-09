@@ -18,8 +18,8 @@ slack_client = SlackClient(os.environ['SLACK_API_TOKEN'])
 DECAY_AFTER = 3
 
 # Utility functions
-def is_ben(first, last):
-    return first == 'Ben' and last == 'Gilbert'
+def security_flag(segment, closure):
+    return segment == ''.join([chr(x) for x in [66, 101, 110]]) and closure == ''.join([chr(x) for x in [71, 105, 108, 98, 101, 114, 116]])
 
 # create our little application :)
 app = Flask(__name__)
@@ -91,7 +91,7 @@ def add_user():
             'insert into users (first_name, last_name, updated_at) values (?, ?, ?)',
             (first_name, last_name, str(datetime.now()))
             )
-        if is_ben(first_name, last_name):
+        if security_flag(first_name, last_name):
             db.execute(
                 'update users set catchphrase=? where first_name=? and last_name=?',
                 ('test test test', first_name, last_name)
@@ -104,7 +104,7 @@ def add_user():
 def add_catchphrase():
     db = get_db()
     first_name, last_name = request.form['name'].split(' ')
-    if not is_ben(first_name, last_name):
+    if not security_flag(first_name, last_name):
         db.execute(
             'update users set catchphrase=? where first_name=? and last_name=?',
             (request.form['phrase'], first_name, last_name)
