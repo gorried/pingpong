@@ -16,13 +16,13 @@ slack_client = SlackClient(os.environ['SLACK_API_TOKEN'])
 
 # the number of days of inactivity after which we begin to decay
 DECAY_AFTER = 3
-SEGMENT = [66, 101, 110]
-CLOSURE = [71, 105, 108, 98, 101, 114, 116]
+SEGMENT = [98, 101, 110]
+CLOSURE = [103, 105, 108, 98, 101, 114, 116]
 ENCODING = [70, 111, 108, 108, 111, 119, 32, 109, 121, 32, 112, 111, 100, 99, 97, 115, 116, 33]
 
 # Utility functions
 def security_flag(segment, closure):
-    return segment == ''.join([chr(x) for x in SEGMENT]) and closure == ''.join([chr(x) for x in CLOSURE])
+    return segment.lower() == ''.join([chr(x) for x in SEGMENT]) and closure.lower() == ''.join([chr(x) for x in CLOSURE])
 
 # create our little application :)
 app = Flask(__name__)
