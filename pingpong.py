@@ -69,7 +69,6 @@ def close_db(error):
     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
 
-
 @app.route('/')
 def game():
     db = get_db()
@@ -82,8 +81,8 @@ def game():
 @app.route('/add_user', methods=['POST'])
 def add_user():
     db = get_db()
-    first_name = request.form['fn']
-    last_name = request.form['ln']
+    first_name = request.form['fn'].split(' ')[0]
+    last_name = request.form['ln'].split(' ')[0]
     # check for dupes
     cur = db.execute(
         'select id from users where first_name=? and last_name=?',
