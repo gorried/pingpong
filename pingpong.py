@@ -317,9 +317,6 @@ class SlackInterface:
                 new_first,
                 new_id
                 )
-            phrase = self.get_phrase(new_id)
-            if phrase:
-                self.send_to_slack_as(new_first, phrase)
             return True
         return False
 
