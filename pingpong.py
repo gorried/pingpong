@@ -21,51 +21,44 @@ CLOSURE = [103, 105, 108, 98, 101, 114, 116]
 ENCODING = [70, 111, 108, 108, 111, 119, 32, 109, 121, 32, 112, 111, 100, 99, 97, 115, 116, 33]
 
 # Utility functions
+
+def stdev(arr):
+    if len(arr) < 2:
+        raise ValueError("To calculate stdev, length ")
+    mean = float(sum(arr)) / len(arr)
+    deltas = [abs(a - mean)**2 for a in arr]
+    return math.sqrt(float(sum(deltas)) / len(deltas))
+
 def security_flag(segment, closure):
     return segment.lower() == ''.join([chr(x) for x in SEGMENT]) and closure.lower() == ''.join([chr(x) for x in CLOSURE])
 
-# create our little application :)
-app = Flask(__name__)
-app.config.from_object(__name__)
-
-# Load default config and override config from an environment variable
-app.config.update(dict(
-    DATABASE=os.path.join(app.root_path, 'pingpong.db'),
-    SECRET_KEY='development key',
-    USERNAME='admin',
-    PASSWORD='default'
-))
-app.config.from_envvar('FLASKR_SETTINGS', silent=True)
-
 def connect_db():
-    """Connects to the specific database."""
     rv = sqlite3.connect(app.config['DATABASE'])
     rv.row_factory = sqlite3.Row
     return rv
 
-def init_db():
+@app.cli.command('initdb')
+def initdb_command():
     db = get_db()
     with app.open_resource('schema.sql', mode='r') as f:
         db.cursor().executescript(f.read())
     db.commit()
-
-@app.cli.command('initdb')
-def initdb_command():
-    """Initializes the database."""
-    init_db()
     print 'Initialized the database.'
 
+"""
+Opens a new database connection if there is none yet for the
+current application context.
+"""
 def get_db():
-    """Opens a new database connection if there is none yet for the
-    current application context.
-    """
     if not hasattr(g, 'sqlite_db'):
         g.sqlite_db = connect_db()
     return g.sqlite_db
 
+"""
+Closes the database again at the end of the request.
+"""
 @app.teardown_appcontext
 def close_db(error):
-    """Closes the database again at the end of the request."""
     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
 
@@ -116,6 +109,18 @@ def add_catchphrase():
 
 @app.route('/add_game', methods=['POST'])
 def add_game():
+    # helper that returns the right k value
+    def get_k(elo, games):
+        K_VALUE = 32
+        K_BEGINNER = 60
+        K_MASTER = 10
+
+        if games < 10:
+            return K_BEGINNER
+        elif elo > 2000:
+            return K_MASTER
+        else:
+            return K_VALUE
 
     STD_DEV = 400
     SCORE_FLOOR = 100
@@ -168,18 +173,6 @@ def add_game():
 
     return redirect(url_for('game'))
 
-def get_k(elo, games):
-    K_VALUE = 32
-    K_BEGINNER = 60
-    K_MASTER = 10
-
-    if games < 10:
-        return K_BEGINNER
-    elif elo > 2000:
-        return K_MASTER
-    else:
-        return K_VALUE
-
 """
 Implements a decay function in three phases
 
@@ -191,6 +184,20 @@ phase 2 - negative logarithmic decay to -300 over the course of two weeks
 phase 3 - linear decay over two weeks to -600
 """
 def decay_fn(day):
+    """
+    Decay functions for the different phases.
+    Return a number in [0,1]
+    """
+    # polynomial
+    def poly_fn(duration, day):
+        return float(day ** 2) / float(duration ** 2)
+    # log
+    def log_fn(duration, day):
+        return math.log(day + 1) / math.log(duration + 1)
+    # linear
+    def linear_fn(duration, day):
+        return (1.0 / duration) * day
+
     # cannot decay more than this
     P1_MAX_DECAY = 200
     P2_MAX_DECAY = 100
@@ -203,70 +210,31 @@ def decay_fn(day):
 
     norm_day = day - DECAY_AFTER
 
-    if day < P1_END:
+    if norm_day <= 0:
+        return 0
+    elif norm_day < P1_END:
         return P1_MAX_DECAY * poly_fn(DURATION, day)
-    elif day < P2_END:
+    elif norm_day < P2_END:
         return sum([P1_MAX_DECAY, P2_MAX_DECAY * log_fn(DURATION, day - P1_END)])
     else:
         max_decay = sum([P1_MAX_DECAY, P2_MAX_DECAY, P3_MAX_DECAY])
         curr_decay = sum([P1_MAX_DECAY, P2_MAX_DECAY, P3_MAX_DECAY * linear_fn(DURATION, day - P2_END)])
         return min(max_decay, curr_decay)
 
-"""
-Decay functions for the different phases.
-
-Return a number in [0,1]
-"""
-
-# polynomial
-def poly_fn(duration, day):
-    return float(day ** 2) / float(duration ** 2)
-
-# log
-def log_fn(duration, day):
-    return math.log(day + 1) / math.log(duration + 1)
-
-# linear
-def linear_fn(duration, day):
-    return (1.0 / duration) * day
-
-def decay_for(day):
-    return -abs(decay_fn(day-1) - decay_fn(day))
-
 def decay_elo():
+
+    def decay_for(day):
+        return -abs(decay_fn(day-1) - decay_fn(day))
+
     with app.app_context():
         db = get_db()
         cur = db.execute('select id, elo, updated_at from users')
         entries = cur.fetchall()
         for entry in entries:
             days = (datetime.now() - date_parser.parse(entry[2])).days
-            if days > DECAY_AFTER:
-                db.execute('update users set elo = ? where id = ?', (int(entry[1]) + int(decay_fn(days)), entry[0]))
+            db.execute('update users set elo = ? where id = ?', (int(entry[1]) + int(decay_for(days)), entry[0]))
 
         db.commit()
-
-# schedule our decay function
-scheduler = BackgroundScheduler()
-scheduler.start()
-scheduler.add_job(
-    func=decay_elo,
-    trigger=IntervalTrigger(hours=24),
-    id='elo_decay',
-    name='Decay Elo every day',
-    replace_existing=True)
-# Shut down the scheduler when exiting the app
-atexit.register(lambda: scheduler.shutdown())
-
-'''
-Skeleton code for slack events
-'''
-
-def stdev(arr):
-    if len(arr) < 2:
-        raise ValueError("To calculate stdev, length ")
-    mean = float(sum(arr)) / len(arr)
-    deltas = [abs(a - mean)**2 for a in arr]
-    return math.sqrt(float(sum(deltas)) / len(deltas))
 
 class SlackInterface:
     def __init__(self):
@@ -374,4 +342,30 @@ class SlackInterface:
                 return True
         return False
 
+'''
+Things to do on app start
+'''
+# create the application
+app = Flask(__name__)
+app.config.from_object(__name__)
 
+# Load default config and override config from an environment variable
+app.config.update(dict(
+    DATABASE=os.path.join(app.root_path, 'pingpong.db'),
+    SECRET_KEY='development key',
+    USERNAME='admin',
+    PASSWORD='default'
+))
+app.config.from_envvar('FLASKR_SETTINGS', silent=True)
+
+# schedule our decay function
+scheduler = BackgroundScheduler()
+scheduler.start()
+scheduler.add_job(
+    func=decay_elo,
+    trigger=IntervalTrigger(hours=24),
+    id='elo_decay',
+    name='Decay Elo every day',
+    replace_existing=True)
+# Shut down the scheduler when exiting the app
+atexit.register(lambda: scheduler.shutdown())
