@@ -17,6 +17,10 @@ slack_client = SlackClient(os.environ['SLACK_API_TOKEN'])
 # the number of days of inactivity after which we begin to decay
 DECAY_AFTER = 3
 
+# Utility functions
+def is_ben(first, last):
+    return first == 'Ben' and last == 'Gilbert'
+
 # create our little application :)
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -75,15 +79,37 @@ def game():
 @app.route('/add_user', methods=['POST'])
 def add_user():
     db = get_db()
+    first_name = request.form['fn']
+    last_name = request.form['ln']
     # check for dupes
-    cur = db.execute('select id from users where first_name=? and last_name=?', (request.form['fn'], request.form['ln']))
+    cur = db.execute(
+        'select id from users where first_name=? and last_name=?',
+        (first_name, last_name)
+        )
     if len(cur.fetchall()) == 0:
         db.execute(
             'insert into users (first_name, last_name, updated_at) values (?, ?, ?)',
-            [request.form['fn'], request.form['ln'], str(datetime.now())])
+            (first_name, last_name, str(datetime.now()))
+            )
+        if is_ben(first_name, last_name):
+            db.execute(
+                'update users set catchphrase=? where first_name=? and last_name=?',
+                ('test test test', first_name, last_name)
+                )
         db.commit()
-        flash('New entry was successfully posted')
 
+    return redirect(url_for('game'))
+
+@app.route('/add_catchphrase', methods=['POST'])
+def add_catchphrase():
+    db = get_db()
+    first_name, last_name = request.form['name'].split(' ')
+    if not is_ben(first_name, last_name):
+        db.execute(
+            'update users set catchphrase=? where first_name=? and last_name=?',
+            (request.form['phrase'], first_name, last_name)
+            )
+        db.commit()
     return redirect(url_for('game'))
 
 @app.route('/add_game', methods=['POST'])
@@ -242,10 +268,23 @@ def stdev(arr):
 
 class SlackInterface:
     def __init__(self):
-        pass
+        self.channel = '#pong'
 
-    def send_to_slack(self, title, message):
-        slack_client.chat_post_message('#pong', title+'\n'+message, username='pongbot')
+    def send_to_slack(self, title, message, name, id_for_phrase):
+        slack_client.chat_post_message(self.channel, title+'\n'+message, username='pongbot')
+        phrase = self.get_phrase(id_for_phrase)
+        if phrase:
+            self.send_to_slack_as(name, phrase)
+
+    def send_to_slack_as(self, name, message):
+        slack_client.chat_post_message(self.channel, message, username=name)
+
+    def get_phrase(self, _id):
+        with app.app_context():
+            db = get_db()
+            phrase = db.execute('select catchphrase from users where id=?', [_id]).fetchone()[0]
+            print phrase
+            return phrase
 
     '''
     winner - (id, first, last, elo)
@@ -256,41 +295,50 @@ class SlackInterface:
     def test(self, winner, loser, old_rankings, new_rankings):
         return (
             self.leader_changed(old_rankings, new_rankings) or
-            self.upset(winner, loser) or
+            self.upset(winner, loser, old_rankings) or
             self.position_swap(old_rankings, new_rankings)
             )
 
     def leader_changed(self, old_rankings, new_rankings):
         old_id, old_first, old_last, old_elo = old_rankings[0]
         new_id, new_first, new_last, new_elo = new_rankings[0]
+
         if old_id != new_id:
+            # query for phrase
             self.send_to_slack(
                 'New Leader!',
                 '{} has overtaken {} as the leader of PSL ping pong!'.format(
-                    '{} {}'.format(old_first, old_last),
-                    '{} {}'.format(new_first, new_last)
-                    )
+                    '{} {}'.format(new_first, new_last),
+                    '{} {}'.format(old_first, old_last)
+                    ),
+                new_first,
+                new_id
                 )
+            phrase = self.get_phrase(new_id)
+            if phrase:
+                self.send_to_slack_as(new_first, phrase)
             return True
         return False
 
-    def upset(self, winner, loser):
+    def upset(self, winner, loser, rankings):
         elos = [r[3] for r in rankings]
         sd = stdev(elos)
 
         winner_id, winner_first, winner_last, winner_elo = winner
         loser_id, loser_first, loser_last, loser_elo = loser
 
-        if len(rankings) > 8 and loser_elo - winner_elo > 1.5 * sd:
+        if loser_elo - winner_elo > 1.5 * sd:
             self.send_to_slack(
-                'Upset Alert!',
+                'Get Rekd!',
                 '{}, ({}) has upset {} ({}). How embarrassing for {}!'.format(
                     '{} {}'.format(winner_first, winner_last),
                     winner_elo,
                     '{} {}'.format(loser_first, loser_last),
                     loser_elo,
-                    '{} {}'.format(loser_first, loser_last)
-                    )
+                    loser_first,
+                    ),
+                winner_first,
+                winner_id
                 )
             return True
         return False
@@ -315,12 +363,16 @@ class SlackInterface:
                     suffix = 'rd'
 
                 self.send_to_slack(
-                    'Shakeup in the Rankings!',
-                    '{} has replaced {} to take {} place!'.format(
+                    '{} has passed {} to take {} place!'.format(
                         '{} {}'.format(old_first, old_last),
                         '{} {}'.format(new_first, new_last),
                         '{}{}'.format(place, suffix)
-                        )
+                        ),
+                    '',
+                    new_first,
+                    new_id
                     )
                 return True
         return False
+
+
