@@ -1,6 +1,7 @@
 pip install flask
 pip install apscheduler
 pip install pyslack-real
+pip install python-dateutil
 
 export FLASK_APP=pingpong.py
 export FLASK_DEBUG=1
