@@ -137,6 +137,18 @@ def add_game():
     winner = request.form['winner'].split(' ')
     loser = request.form['loser'].split(' ')
 
+    # make sure that we didnt just record this game
+    loser_updated = date_parser.parse(
+        db.execute('select updated_at from users where first_name = ? and last_name = ?', (loser[0], loser[1])).fetchone()
+        )
+    winner_updated = date_parser.parse(
+        db.execute('select updated_at from users where first_name = ? and last_name = ?', (winner[0], winner[1])).fetchone()
+        )
+    now = datetime.now()
+    if (now - winner_updated).seconds < 120 and (now - loser_updated).seconds < 120:
+        # fail silently
+        return redirect(url_for('game'))
+
     # get the id's from the winner and loser
     winner_id, winner_elo, winner_won, winner_lost = db.execute('select id, elo, won, lost from users where first_name = ? and last_name = ?', (winner[0], winner[1])).fetchone()
     loser_id, loser_elo, loser_won, loser_lost = db.execute('select id, elo, won, lost from users where first_name = ? and last_name = ?', (loser[0], loser[1])).fetchone()
