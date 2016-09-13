@@ -258,7 +258,7 @@ class SlackInterface:
         self.channel = '#pong'
 
     def send_to_slack(self, title, message, name, id_for_phrase):
-        slack_client.chat_post_message(self.channel, title+'\n'+message, username='pongbot')
+        slack_client.chat_post_message(self.channel, ' :table_tennis_paddle_and_ball: '+ title+ ' :table_tennis_paddle_and_ball: \n'+message, username='pongbot')
         phrase = self.get_phrase(id_for_phrase)
         if phrase:
             self.send_to_slack_as(name, phrase)
@@ -384,3 +384,6 @@ scheduler.add_job(
     replace_existing=True)
 # Shut down the scheduler when exiting the app
 atexit.register(lambda: scheduler.shutdown())
+
+if __name__ == '__main__':
+  app.run()
