@@ -246,7 +246,7 @@ class SlackInterface:
         self.channel = '#pong'
 
     def send_to_slack(self, title, message, name, id_for_phrase):
-        slack_client.chat_post_message(self.channel, '\U+1F3D3'+ title+'\U+1F3D3 \n'+message, username='pongbot')
+        slack_client.chat_post_message(self.channel, ' :table_tennis_paddle_and_ball: '+ title+ ' :table_tennis_paddle_and_ball: \n'+message, username='pongbot')
         phrase = self.get_phrase(id_for_phrase)
         if phrase:
             self.send_to_slack_as(name, phrase)
