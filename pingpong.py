@@ -139,10 +139,10 @@ def add_game():
 
     # make sure that we didnt just record this game
     loser_updated = date_parser.parse(
-        db.execute('select updated_at from users where first_name = ? and last_name = ?', (loser[0], loser[1])).fetchone()
+        db.execute('select updated_at from users where first_name = ? and last_name = ?', (loser[0], loser[1])).fetchone()[0]
         )
     winner_updated = date_parser.parse(
-        db.execute('select updated_at from users where first_name = ? and last_name = ?', (winner[0], winner[1])).fetchone()
+        db.execute('select updated_at from users where first_name = ? and last_name = ?', (winner[0], winner[1])).fetchone()[0]
         )
     now = datetime.now()
     if (now - winner_updated).seconds < 120 and (now - loser_updated).seconds < 120:
