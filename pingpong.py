@@ -72,7 +72,7 @@ def game():
     db = get_db()
     cur = db.execute('select first_name, last_name from users order by first_name')
     users = cur.fetchall()
-    cur = db.execute('select first_name, last_name, elo, won, lost from users order by elo desc, first_name')
+    cur = db.execute('select first_name, last_name, elo, won, lost from users where won != 0 and lost != 0 order by elo desc, first_name')
     rankings = cur.fetchall()
     return render_template('game.html', users=users, rankings=rankings)
 
