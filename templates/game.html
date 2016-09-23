@@ -84,7 +84,11 @@
             <div class="col-sm-10">
               <select name=winner class=form-control>
                 {% for user in users %}
-                  <option>{{ user.first_name + ' ' + user.last_name }}</option>
+                  <option
+                  {% if loop.first %}
+                    selected="selected"
+                  {% endif %}
+                  >{{ user.first_name + ' ' + user.last_name }}</option>
                 {% else %}
                 {% endfor %}
               </select>
@@ -96,7 +100,11 @@
             <div class="col-sm-10">
               <select name=loser class=form-control>
                 {% for user in users %}
-                  <option>{{ user.first_name + ' ' + user.last_name }}</option>
+                  <option
+                  {% if loop.first %}
+                    selected="selected"
+                  {% endif %}
+                  >{{ user.first_name + ' ' + user.last_name }}</option>
                 {% else %}
                 {% endfor %}
               </select>
@@ -129,7 +137,11 @@
             <div class="col-sm-10">
               <select name=name class=form-control>
                 {% for user in users %}
-                  <option>{{ user.first_name + ' ' + user.last_name }}</option>
+                  <option
+                  {% if loop.first %}
+                    selected="selected"
+                  {% endif %}
+                  >{{ user.first_name + ' ' + user.last_name }}</option>
                 {% else %}
                 {% endfor %}
               </select>
