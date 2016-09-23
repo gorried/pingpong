@@ -273,6 +273,19 @@ class SlackInterface:
             print phrase
             return phrase
 
+    def rank_to_string(self, r):
+        place = r + 1
+
+        suffix = 'th'
+        if place == 1:
+            suffix = 'st'
+        elif place == 2:
+            suffix = 'nd'
+        elif place == 3:
+            suffix = 'rd'
+
+        return '{}{}'.format(place, suffix)
+
     '''
     winner - (id, first, last, elo)
     loser - (id, first, last, elo)
@@ -283,7 +296,7 @@ class SlackInterface:
         return (
             self.leader_changed(old_rankings, new_rankings) or
             self.upset(winner, loser, old_rankings) or
-            self.position_swap(old_rankings, new_rankings)
+            self.position_swap(winner, loser, old_rankings, new_rankings)
             )
 
     def leader_changed(self, old_rankings, new_rankings):
@@ -305,8 +318,7 @@ class SlackInterface:
         return False
 
     def upset(self, winner, loser, rankings):
-        elos = [r[3] for r in rankings]
-        sd = stdev(elos)
+        sd = stdev([r[3] for r in rankings])
 
         winner_id, winner_first, winner_last, winner_elo = winner
         loser_id, loser_first, loser_last, loser_elo = loser
@@ -327,36 +339,59 @@ class SlackInterface:
             return True
         return False
 
-    def position_swap(self, old_rankings, new_rankings):
+    def position_swap(self, winner, loser, old_rankings, new_rankings):
         if len(old_rankings) != len(new_rankings):
             raise ValueError("Rankings of different length")
+
+        winner_id, winner_first, winner_last, winner_elo = winner
+        loser_id, loser_first, loser_last, loser_elo = loser
+
+        winner_old = -1
+        winner_new = -1
+        loser_old = -1
+        loser_new = -1
 
         for i in xrange(len(old_rankings)):
             old_id, old_first, old_last, old_elo = old_rankings[i]
             new_id, new_first, new_last, new_elo = new_rankings[i]
 
-            if old_id != new_id:
-                place = i + 1
+            if old_id == winner_id:
+                winner_old = i
+            if new_id == winner_id:
+                winner_new = i
+            if old_id == loser_id:
+                loser_old = i
+            if new_id == loser_id:
+                loser_new = i
 
-                suffix = 'th'
-                if place == 1:
-                    suffix = 'st'
-                elif place == 2:
-                    suffix = 'nd'
-                elif place == 3:
-                    suffix = 'rd'
-
-                self.send_to_slack(
-                    '{} has passed {} to take {} place!'.format(
-                        '{} {}'.format(new_first, new_last),
-                        '{} {}'.format(old_first, old_last),
-                        '{}{}'.format(place, suffix)
-                        ),
-                    '',
-                    new_first,
-                    new_id
+        if winner_new < winner_old:
+            old_id, old_first, old_last, old_elo = old_rankings[winner_new]
+            s = '{} has passed {} to take {} place'.format(
+                '{} {}'.format(winner_first, winner_last),
+                '{} {}'.format(old_first, old_last),
+                self.rank_to_string(winner_new)
+                )
+            if loser_new > loser_old:
+                new_id, new_first, new_last, new_elo = new_rankings[loser_old]
+                s += ', and {} has given up {} place to {}!'.format(
+                    '{} {}'.format(loser_first, loser_last),
+                    self.rank_to_string(loser_old),
+                    '{} {}'.format(new_first, new_last)
                     )
-                return True
+            else:
+                s += '!'
+            self.send_to_slack(s, '', new_first, new_id)
+            return True
+        elif loser_new > loser_old:
+            new_id, new_first, new_last, new_elo = new_rankings[loser_old]
+            s = '{} has given up {} place to {}!'.format(
+                '{} {}'.format(loser_first, loser_last),
+                self.rank_to_string(loser_old),
+                '{} {}'.format(new_first, new_last)
+                )
+            self.send_to_slack(s, '', new_first, new_id)
+            return True
+
         return False
 
 '''
