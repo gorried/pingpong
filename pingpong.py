@@ -116,9 +116,9 @@ def add_catchphrase():
 def add_game():
     # helper that returns the right k value
     def get_k(elo, games):
-        K_VALUE = 32
+        K_VALUE = 50
         K_BEGINNER = 60
-        K_MASTER = 10
+        K_MASTER = 30
 
         if games < 10:
             return K_BEGINNER
@@ -243,15 +243,14 @@ def decay_elo():
     def decay_for(day):
         return -abs(decay_fn(day-1) - decay_fn(day))
 
-    with app.app_context():
-        db = get_db()
-        cur = db.execute('select id, elo, updated_at from users')
-        entries = cur.fetchall()
-        for entry in entries:
-            days = (datetime.now() - date_parser.parse(entry[2])).days
-            db.execute('update users set elo = ? where id = ?', (int(entry[1]) + int(decay_for(days)), entry[0]))
-
-        db.commit()
+    # with app.app_context():
+    #     db = get_db()
+    #     cur = db.execute('select id, elo, updated_at from users')
+    #     entries = cur.fetchall()
+    #     for entry in entries:
+    #         days = (datetime.now() - date_parser.parse(entry[2])).days
+    #         db.execute('update users set elo = ? where id = ?', (int(entry[1]) + int(decay_for(days)), entry[0]))
+    #     db.commit()
 
 class SlackInterface:
     def __init__(self):
