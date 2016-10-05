@@ -1,7 +1,9 @@
 body {
-  font-family: sans-serif; background: #fff;
+  font-family: 'Titillium Web', sans-serif;
+  background: #000b17;
   padding-left: 20%;
   padding-right: 20%;
+  color: white;
 }
 
 select, input {
@@ -24,17 +26,41 @@ select, input {
   clear: both;
 }
 
+#btn-red {
+  background-color: #ea0233;
+  border-color: #ea0233;
+}
+
+#btn-green {
+  background-color: #02ea92;
+  border-color: #02ea92;
+}
+
+.modal-content {
+  background-color: #333333;
+  color: white;
+}
+
+#btn-blue {
+  background-color: #0292ea;
+  border-color: #0292ea;
+}
+
+.footer_container { background: #333333; bottom:0; height:60px; left:0; position:fixed; width:100%; }
+.footer { line-height:60px; margin:0 auto; text-align:center; }
+
 #champ {
-  font-size: 40pt;
+  font-size: 12pt;
   animation: blinker 1s linear infinite;
-  animation: color_change 4s linear infinite;
+  animation: color_change 2s linear infinite;
+  text-align: center;
 }
 
 @keyframes color_change {
-  0% { color: red; }
-  25% { color: cyan; }
-  50% { color: orange; }
-  75% { color: magenta; }
+  0% { color: #02ea92; }
+  25% { color: #0292ea; }
+  50% { color: #02ea92; }
+  75% { color: #0292ea; }
 }
 
 @keyframes blinker {

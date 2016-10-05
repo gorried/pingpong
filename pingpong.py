@@ -19,6 +19,9 @@ SEGMENT = [98, 101, 110]
 CLOSURE = [103, 105, 108, 98, 101, 114, 116]
 ENCODING = [70, 111, 108, 108, 111, 119, 32, 109, 121, 32, 112, 111, 100, 99, 97, 115, 116, 33]
 
+MIN_WAIT_TIME_BETWEEN_GAMES_SECONDS = 15
+SELECT_PLAYER_STR = "Select"
+
 app = Flask(__name__)
 scheduler = BackgroundScheduler()
 slack_client = SlackClient(os.environ['SLACK_API_TOKEN'])
@@ -128,31 +131,42 @@ def add_game():
         else:
             return K_VALUE
 
+
     STD_DEV = 400
     SCORE_FLOOR = 100
+
+    print('---within add_game(), request.form=')
+    print(request.form)
+
 
     # define the slack interface
     si = SlackInterface()
 
     db = get_db()
-    winner = request.form['winner'].split(' ')
-    loser = request.form['loser'].split(' ')
+    winner_first, winner_last = request.form['winner'].split(' ') #note: assumes names like "John dos Santos" will not work. fail.
+    loser_first, loser_last = request.form['loser'].split(' ')
+
+    if winner_first == SELECT_PLAYER_STR or loser_first == SELECT_PLAYER_STR:
+        # fail silently
+        print('eh... gotta play against a real human')
+        return redirect(url_for('game'))
 
     # make sure that we didnt just record this game
     loser_updated = date_parser.parse(
-        db.execute('select updated_at from users where first_name = ? and last_name = ?', (loser[0], loser[1])).fetchone()[0]
+        db.execute('select updated_at from users where first_name = ? and last_name = ?', (loser_first, loser_last)).fetchone()[0]
         )
     winner_updated = date_parser.parse(
-        db.execute('select updated_at from users where first_name = ? and last_name = ?', (winner[0], winner[1])).fetchone()[0]
+        db.execute('select updated_at from users where first_name = ? and last_name = ?', (winner_first, winner_last)).fetchone()[0]
         )
     now = datetime.now()
-    if (now - winner_updated).seconds < 120 and (now - loser_updated).seconds < 120:
+    if (now - winner_updated).seconds < MIN_WAIT_TIME_BETWEEN_GAMES_SECONDS and (now - loser_updated).seconds < MIN_WAIT_TIME_BETWEEN_GAMES_SECONDS:
         # fail silently
+        print('YOU CANNOT ENTER MULTIPLE GAMES AT ONCE!!!')
         return redirect(url_for('game'))
 
     # get the id's from the winner and loser
-    winner_id, winner_elo, winner_won, winner_lost = db.execute('select id, elo, won, lost from users where first_name = ? and last_name = ?', (winner[0], winner[1])).fetchone()
-    loser_id, loser_elo, loser_won, loser_lost = db.execute('select id, elo, won, lost from users where first_name = ? and last_name = ?', (loser[0], loser[1])).fetchone()
+    winner_id, winner_elo, winner_won, winner_lost = db.execute('select id, elo, won, lost from users where first_name = ? and last_name = ?', (winner_first, winner_last)).fetchone()
+    loser_id, loser_elo, loser_won, loser_lost = db.execute('select id, elo, won, lost from users where first_name = ? and last_name = ?', (loser_first, loser_last)).fetchone()
 
     winner_games = winner_lost + winner_won
     loser_games = loser_lost + loser_won
@@ -181,13 +195,17 @@ def add_game():
         new_rankings = cur.fetchall()
 
         si.test(
-            (winner_id, winner[0], winner[1], winner_elo),
-            (loser_id, loser[0], loser[1], loser_elo),
+            (winner_id, winner_first, winner_last, winner_elo),
+            (loser_id, loser_first, loser_last, loser_elo),
             old_rankings,
             new_rankings
             )
 
         db.commit()
+    else:
+        print('FAILED!!!')
+        print(winner_id)
+        print(loser_id)
 
     return redirect(url_for('game'))
 
