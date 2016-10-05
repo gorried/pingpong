@@ -1,9 +1,14 @@
 {% extends "layout.html" %}
 {% block body %}
 
+<h2 style="text-align:center;"> <span class="red">Pioneer Square Labs</span> <span class="green">Ping Pong </span> <span class="blue"> Rankings</span></h2>
+
+<div style="height:10px;"></div>
+
 <div class=row>
   <div class="col-md-2 col-sm-2"></div>
-  <div class=col-md-8> <img style="width:100%" src="static/alex-ping-repeating.gif" /> </div>
+  <!-- <div class=col-md-8> <img style="width:100%" src="static/alex-ping-repeating.gif" /> </div> -->
+  <div class=col-md-8> <img style="width:100%" src="static/pong-atari.gif" /> </div>
   <div class="col-md-2 col-sm-2"></div>
 </div>
 
@@ -27,13 +32,16 @@
   </div>
 </div>
 
-<!-- <div class=row>
-  <div id="champ">
-    {% if rankings|length > 0 %}
-      {{rankings[0].first_name + ' ' + rankings[0].last_name}} is the champ
-    {% endif %}
+<div style="height:10px;"></div>
+<div class=row>
+  <div id="champ" class="scroll-left">
+    <p>
+      {% if rankings|length > 0 %}
+        {{rankings[0].first_name + ' ' + rankings[0].last_name}} is the champ
+      {% endif %}
+    </p>
   </div>
-</div> -->
+</div>
 
 <div style="height:10px;"></div>
 <div class=row id="behind">
@@ -71,7 +79,7 @@
             {% endif %}
           </td>
 
-          <td><b>{{ user.first_name + ' ' + user.last_name }}</b></td>
+          <td>{{ user.first_name + ' ' + user.last_name }}</td>
           <td>{{ user.elo }}</td>
           <td>{{ user.won }} - {{ user.lost }}</td>
         </tr>
@@ -80,6 +88,9 @@
     </table>
   </div>
 </div>
+
+
+<div style="height:1000px;"></div>
 
 {% if rankings|length > 0 %}
 <div class=row style="padding-bottom:10px;">
