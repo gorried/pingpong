@@ -2,7 +2,23 @@
 {% block body %}
 
 <div style="height:30px;"></div>
-
+<div class=row>
+  <div class=col-lg-3>
+    <h1>PSL Ping Pong Rankings</h1>
+    <button type="button" style="width:100%;" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addGameModal">
+      Add Game
+    </button>
+    <div style="height:10px;"></div>
+    <button type="button" style="width:100%" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addUserModal">
+      Add User
+    </button>
+    <div style="height:10px;"></div>
+    <button type="button" style="width:100%" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addCatchphraseModal">
+      Catchphrase
+    </button>
+  </div>
+</div>
+<br/>
 <div class=row>
   <div class=col-lg-9>
     <!--div id=champ>
@@ -28,20 +44,6 @@
       {% else %}
       {% endfor %}
     </table>
-  </div>
-  <div class=col-lg-3>
-    <h1>PSL Ping Pong Rankings</h1>
-    <button type="button" style="width:100%;" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addGameModal">
-      Add Game
-    </button>
-    <div style="height:10px;"></div>
-    <button type="button" style="width:100%" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addUserModal">
-      Add User
-    </button>
-    <div style="height:10px;"></div>
-    <button type="button" style="width:100%" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addCatchphraseModal">
-      Catchphrase
-    </button>
   </div>
 </div>
 

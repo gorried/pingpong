@@ -64,7 +64,7 @@ Closes the database again at the end of the request.
 """
 @app.teardown_appcontext
 def close_db(error):
-    if hasattr(g, 'sqlite_db'):
+     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
 
 @app.route('/')
@@ -72,7 +72,8 @@ def game():
     db = get_db()
     cur = db.execute('select first_name, last_name from users order by first_name')
     users = cur.fetchall()
-    cur = db.execute('select first_name, last_name, elo, won, lost from users where won != 0 and lost != 0 order by elo desc, first_name')
+    cur = db.execute('select first_name, last_name, elo, won, lost from users order by elo desc, first_name')
+    #cur = db.execute('select first_name, last_name, elo, won, lost from users where (won != 0 and lost != 0) order by elo desc, first_name')
     rankings = cur.fetchall()
     return render_template('game.html', users=users, rankings=rankings)
 
@@ -116,9 +117,9 @@ def add_catchphrase():
 def add_game():
     # helper that returns the right k value
     def get_k(elo, games):
-        K_VALUE = 50
-        K_BEGINNER = 60
-        K_MASTER = 30
+        K_VALUE = 100
+        K_BEGINNER = 120
+        K_MASTER = 80
 
         if games < 10:
             return K_BEGINNER
@@ -400,9 +401,10 @@ Things to do on app start
 app.config.from_object(__name__)
 
 # Load default config and override config from an environment variable
+
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'pingpong.db'),
-    SECRET_KEY='development key',
+   SECRET_KEY='development key',
     USERNAME='admin',
     PASSWORD='default'
 ))
