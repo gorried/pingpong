@@ -46,7 +46,11 @@ select, input {
   border-color: #0292ea;
 }
 
-.footer_container { background: #333333; bottom:0; height:60px; left:0; position:fixed; width:100%; }
+#behind{
+  z-index: -5;
+}
+
+.footer_container { z-index: 10000; background: #333333; bottom:0; height:60px; left:0; position:fixed; width:100%; }
 .footer { line-height:60px; margin:0 auto; text-align:center; }
 
 #champ {
