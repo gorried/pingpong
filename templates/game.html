@@ -81,7 +81,7 @@
 
           <td>{{ user.first_name + ' ' + user.last_name }}</td>
           <td>{{ user.elo }}</td>
-          <td>{{ user.won / (user.lost + user.won) }} </td>
+          <td>{{ "%.3f"|format((user.won / (user.won + user.lost + 0.0001)) ) }} </td>
         </tr>
       {% else %}
       {% endfor %}
