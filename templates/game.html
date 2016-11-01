@@ -51,8 +51,8 @@
       <tr>
         <th>Rank</th>
         <th>Player</th>
-        <th>Score</th>
-        <th>Record</th>
+        <th>ELO Score</th>
+        <th>Pct</th>
       </tr>
       {% for user in rankings %}
         <tr>
@@ -81,7 +81,7 @@
 
           <td>{{ user.first_name + ' ' + user.last_name }}</td>
           <td>{{ user.elo }}</td>
-          <td>{{ user.won }} - {{ user.lost }}</td>
+          <td>{{ user.won / (user.lost + user.won) }} </td>
         </tr>
       {% else %}
       {% endfor %}
